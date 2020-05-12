@@ -42,8 +42,16 @@ void writefifo_tilde_dsp(t_writefifo_tilde *x, t_signal **sp) {
   /* register the writefifo_perform() function with DSP-tree */
   dsp_add(writefifo_tilde_perform, 4, x, sp[0]->s_vec, sp[1]->s_vec,
           sp[0]->s_n);
+
+  /* initialize loudness */
+  x->loudness = 0;
+
   /* set fifo size to minimize latency */
-  fcntl(x->writefd, F_SETPIPE_SZ, sp[0]->s_n * 8); // fifo can hold 2 blocks
+  const int num_chan = 2;    // number of audio channels
+  const int num_blocks = 32; // number of blocks to store in fifo
+  int pipe_size = sp[0]->s_n * sizeof(int16_t) * num_chan * num_blocks;
+  post("writefifo~: pipe size = %d bytes", pipe_size);
+  fcntl(x->writefd, F_SETPIPE_SZ, pipe_size); // 46 ms of audio in fifo
 }
 
 void writefifo_tilde_free(t_writefifo_tilde *x) {
