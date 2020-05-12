@@ -18,6 +18,7 @@ typedef struct _writefifo_tilde {
   t_inlet *x_inL; // first signal inlet
   t_inlet *x_inR; // second signal inlet
   int writefd;    // fifo file descriptor
+  int loudness;   // audio playing detection
 } t_writefifo_tilde;
 
 t_int *writefifo_tilde_perform(t_int *w) {
@@ -27,13 +28,24 @@ t_int *writefifo_tilde_perform(t_int *w) {
   int n = (int)(w[4]);
 
   int16_t buf[n * 2];
+  int sum = 0;
 
   for (int i = 0; i < n; i++) {
-    buf[i * 2] = INT16_MAX * inL[i];
-    buf[i * 2 + 1] = INT16_MAX * inR[i];
+    int16_t left = INT16_MAX * inL[i];
+    int16_t right = INT16_MAX * inR[i];
+    sum += abs(left) + abs(right);
+    buf[i * 2] = left;
+    buf[i * 2 + 1] = right;
   }
 
-  write(x->writefd, buf, sizeof(buf));
+  if (!x->loudness && sum) {
+    x->loudness = sum; // new sound
+  } else {
+    x->loudness += (sum - x->loudness) >> 8; // low pass filter loudness
+  }
+
+  if (x->loudness)
+    write(x->writefd, buf, sizeof(buf)); // only write if not silent
 
   return (w + 5); // return pointer to next dsp object dataspace
 }
