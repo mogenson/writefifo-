@@ -1,0 +1,6 @@
+#N canvas 727 99 301 189 12;
+#X obj 105 25 osc~ 440;
+#X obj 29 83 writefifo~ /tmp/pd-to-pa.fifo;
+#X text 26 121 to play fifo \, use: pacat -p < /tmp/pd-to-pa.fifo;
+#X connect 0 0 1 0;
+#X connect 0 0 1 1;
